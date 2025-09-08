@@ -5,11 +5,13 @@ import {
   Alert,
   ActivityIndicator,
   TouchableOpacity,
+  Platform,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useFocusEffect } from "expo-router";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 
@@ -19,6 +21,7 @@ interface ProductData {
   image: string;
   upc: string;
   timestamp: number;
+  expirationDate?: number;
 }
 
 export default function ScanScreen() {
@@ -27,6 +30,8 @@ export default function ScanScreen() {
   const [productData, setProductData] = useState<ProductData | null>(null);
   const [loading, setLoading] = useState(false);
   const [cameraKey, setCameraKey] = useState(0);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [expirationDate, setExpirationDate] = useState<Date | null>(null);
   const cameraRef = useRef<CameraView>(null);
 
   // Reset scanner state when screen comes into focus
@@ -36,6 +41,8 @@ export default function ScanScreen() {
       setScanned(false);
       setProductData(null);
       setLoading(false);
+      setExpirationDate(null);
+      setShowDatePicker(false);
       // Force camera remount by changing key
       setCameraKey((prev) => prev + 1);
     }, [])
@@ -62,6 +69,7 @@ export default function ScanScreen() {
 
       if (data.code === "OK" && data.items && data.items.length > 0) {
         const item = data.items[0];
+        // console.log(item);
         const productItem: ProductData = {
           title: item.title || "No title available",
           weight: item.weight || "No weight available",
@@ -103,8 +111,51 @@ export default function ScanScreen() {
     setScanned(false);
     setProductData(null);
     setLoading(false);
+    setExpirationDate(null);
+    setShowDatePicker(false);
     // Force camera remount by changing key
     setCameraKey((prev) => prev + 1);
+  };
+
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === "ios");
+    if (selectedDate) {
+      // Set time to 9 AM
+      const dateWithTime = new Date(selectedDate);
+      dateWithTime.setHours(9, 0, 0, 0);
+      setExpirationDate(dateWithTime);
+
+      // Update the product data with the new expiration date
+      if (productData) {
+        const updatedProductData = {
+          ...productData,
+          expirationDate: dateWithTime.getTime(),
+        };
+        setProductData(updatedProductData);
+        // Update the item in storage
+        updateItemInStorage(updatedProductData);
+      }
+    }
+  };
+
+  const updateItemInStorage = async (updatedItem: ProductData) => {
+    try {
+      const existingItems = await AsyncStorage.getItem("scannedItems");
+      if (existingItems) {
+        const items = JSON.parse(existingItems);
+        const itemIndex = items.findIndex(
+          (item: ProductData) =>
+            item.upc === updatedItem.upc &&
+            item.timestamp === updatedItem.timestamp
+        );
+        if (itemIndex !== -1) {
+          items[itemIndex] = updatedItem;
+          await AsyncStorage.setItem("scannedItems", JSON.stringify(items));
+        }
+      }
+    } catch (error) {
+      console.error("Error updating item in storage:", error);
+    }
   };
 
   if (!permission) {
@@ -186,6 +237,20 @@ export default function ScanScreen() {
                 <ThemedText style={styles.infoValue}>
                   {productData.weight}
                 </ThemedText>
+
+                <ThemedText style={styles.infoLabel}>
+                  Expiration Date:
+                </ThemedText>
+                <TouchableOpacity
+                  style={styles.dateButton}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <ThemedText style={styles.dateButtonText}>
+                    {expirationDate
+                      ? expirationDate.toLocaleDateString()
+                      : "Select Date"}
+                  </ThemedText>
+                </TouchableOpacity>
               </View>
             </View>
           ) : null}
@@ -208,6 +273,16 @@ export default function ScanScreen() {
             </TouchableOpacity>
           </View>
         </View>
+      )}
+
+      {showDatePicker && (
+        <DateTimePicker
+          value={expirationDate || new Date()}
+          mode="date"
+          display={Platform.OS === "ios" ? "spinner" : "default"}
+          onChange={handleDateChange}
+          minimumDate={new Date()}
+        />
       )}
     </ThemedView>
   );
@@ -314,5 +389,19 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 16,
     color: "red",
+  },
+  dateButton: {
+    backgroundColor: "rgba(0,122,255,0.1)",
+    borderWidth: 1,
+    borderColor: "#007AFF",
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 5,
+    marginBottom: 10,
+  },
+  dateButtonText: {
+    color: "#007AFF",
+    fontSize: 16,
+    textAlign: "center",
   },
 });

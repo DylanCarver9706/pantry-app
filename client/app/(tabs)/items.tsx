@@ -18,6 +18,7 @@ interface ProductData {
   image: string;
   upc: string;
   timestamp: number;
+  expirationDate?: number;
 }
 
 export default function ItemsScreen() {
@@ -104,9 +105,18 @@ export default function ItemsScreen() {
           <ThemedText style={styles.infoLabel}>Weight:</ThemedText>
           <ThemedText style={styles.infoValue}>{item.weight}</ThemedText>
 
-          <ThemedText style={styles.infoLabel}>Scanned:</ThemedText>
+          {item.expirationDate && (
+            <>
+              <ThemedText style={styles.infoLabel}>Expires:</ThemedText>
+              <ThemedText style={styles.infoValue}>
+                {formatDate(item.expirationDate).split(" ")[0]}
+              </ThemedText>
+            </>
+          )}
+
+          <ThemedText style={styles.infoLabel}>Added:</ThemedText>
           <ThemedText style={styles.infoValue}>
-            {formatDate(item.timestamp)}
+            {formatDate(item.timestamp).split(" ")[0]}
           </ThemedText>
         </View>
       </View>
