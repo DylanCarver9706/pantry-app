@@ -20,6 +20,7 @@ const MAPPING = {
   "chevron.right": "chevron-right",
   menu: "menu",
   camerao: "camera-alt",
+  gear: "settings",
 } as IconMapping;
 
 /**

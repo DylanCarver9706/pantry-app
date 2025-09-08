@@ -1,10 +1,10 @@
 import React from "react";
-import { StyleSheet, View, TouchableOpacity } from "react-native";
-import { router } from "expo-router";
+import { StyleSheet, View } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 
 export default function HomeScreen() {
+
   return (
     <ThemedView style={styles.container}>
       <ThemedText type="title" style={styles.title}>
@@ -15,63 +15,60 @@ export default function HomeScreen() {
         Your digital pantry management solution
       </ThemedText>
 
-      <View style={styles.featureContainer}>
-        <ThemedText type="subtitle" style={styles.featureTitle}>
-          How to Use
-        </ThemedText>
-
-        <View style={styles.stepContainer}>
-          <ThemedText style={styles.stepNumber}>1</ThemedText>
-          <View style={styles.stepContent}>
-            <ThemedText style={styles.stepTitle}>Scan Products</ThemedText>
-            <ThemedText style={styles.stepDescription}>
-              Use the Scan tab to scan UPC barcodes with your camera. The app
-              will automatically fetch product information including title,
-              weight, and images.
-            </ThemedText>
-          </View>
-        </View>
-
-        <View style={styles.stepContainer}>
-          <ThemedText style={styles.stepNumber}>2</ThemedText>
-          <View style={styles.stepContent}>
-            <ThemedText style={styles.stepTitle}>View Your Items</ThemedText>
-            <ThemedText style={styles.stepDescription}>
-              Check the Items tab to see all your scanned products. Items are
-              automatically saved and organized by scan date.
-            </ThemedText>
-          </View>
-        </View>
-
-        <View style={styles.stepContainer}>
-          <ThemedText style={styles.stepNumber}>3</ThemedText>
-          <View style={styles.stepContent}>
-            <ThemedText style={styles.stepTitle}>Manage Your Pantry</ThemedText>
-            <ThemedText style={styles.stepDescription}>
-              Keep track of what you have, when you bought it, and easily manage
-              your pantry inventory.
-            </ThemedText>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => router.push("/(tabs)/scan")}
-        >
-          <ThemedText style={styles.primaryButtonText}>
-            Start Scanning
+        <View style={styles.featureContainer}>
+          <ThemedText type="subtitle" style={styles.featureTitle}>
+            How to Use
           </ThemedText>
-        </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={() => router.push("/(tabs)/items")}
-        >
-          <ThemedText style={styles.secondaryButtonText}>View Items</ThemedText>
-        </TouchableOpacity>
-      </View>
+          <View style={styles.stepContainer}>
+            <ThemedText style={styles.stepNumber}>1</ThemedText>
+            <View style={styles.stepContent}>
+              <ThemedText style={styles.stepTitle}>Scan Products</ThemedText>
+              <ThemedText style={styles.stepDescription}>
+                Use the Scan tab to scan UPC barcodes with your camera. The app
+                will automatically fetch product information including title,
+                weight, and images.
+              </ThemedText>
+            </View>
+          </View>
+
+          <View style={styles.stepContainer}>
+            <ThemedText style={styles.stepNumber}>2</ThemedText>
+            <View style={styles.stepContent}>
+              <ThemedText style={styles.stepTitle}>View Your Items</ThemedText>
+              <ThemedText style={styles.stepDescription}>
+                Check the Items tab to see all your scanned products. Items are
+                automatically saved and organized by scan date.
+              </ThemedText>
+            </View>
+          </View>
+
+          <View style={styles.stepContainer}>
+            <ThemedText style={styles.stepNumber}>3</ThemedText>
+            <View style={styles.stepContent}>
+              <ThemedText style={styles.stepTitle}>
+                Set Expiration Dates
+              </ThemedText>
+              <ThemedText style={styles.stepDescription}>
+                Add expiration dates to your items and get daily notifications
+                at 10:30 PM when items are about to expire in 3 days.
+              </ThemedText>
+            </View>
+          </View>
+
+          <View style={styles.stepContainer}>
+            <ThemedText style={styles.stepNumber}>4</ThemedText>
+            <View style={styles.stepContent}>
+              <ThemedText style={styles.stepTitle}>
+                Manage Your Pantry
+              </ThemedText>
+              <ThemedText style={styles.stepDescription}>
+                Keep track of what you have, when you bought it, and easily
+                manage your pantry inventory with smart notifications.
+              </ThemedText>
+            </View>
+          </View>
+        </View>
     </ThemedView>
   );
 }
@@ -133,6 +130,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: "100%",
     gap: 15,
+    marginTop: 20,
   },
   primaryButton: {
     backgroundColor: "#007AFF",
@@ -159,5 +157,62 @@ const styles = StyleSheet.create({
     color: "#007AFF",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  notificationContainer: {
+    width: "100%",
+    backgroundColor: "rgba(0,122,255,0.1)",
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 30,
+    borderWidth: 1,
+    borderColor: "rgba(0,122,255,0.2)",
+  },
+  notificationTitle: {
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  notificationDescription: {
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 15,
+    opacity: 0.8,
+  },
+  notificationButtons: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    gap: 10,
+  },
+  notificationButton: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  notificationButtonText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  rescheduleButton: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#007AFF",
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    marginTop: 10,
+  },
+  rescheduleButtonText: {
+    color: "#007AFF",
+    fontSize: 14,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  scrollContainer: {
+    flex: 1,
+    width: "100%",
   },
 });
