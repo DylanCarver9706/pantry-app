@@ -6,9 +6,11 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Platform,
+  TextInput,
 } from "react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useFocusEffect } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -22,6 +24,8 @@ interface ProductData {
   upc: string;
   timestamp: number;
   expirationDate?: number;
+  isManualEntry?: boolean;
+  base64Image?: string;
 }
 
 export default function ScanScreen() {
@@ -32,6 +36,10 @@ export default function ScanScreen() {
   const [cameraKey, setCameraKey] = useState(0);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [expirationDate, setExpirationDate] = useState<Date | null>(null);
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  const [manualTitle, setManualTitle] = useState("");
+  const [manualWeight, setManualWeight] = useState("");
+  const [base64Image, setBase64Image] = useState<string | null>(null);
   const cameraRef = useRef<CameraView>(null);
 
   // Reset scanner state when screen comes into focus
@@ -43,6 +51,10 @@ export default function ScanScreen() {
       setLoading(false);
       setExpirationDate(null);
       setShowDatePicker(false);
+      setShowManualEntry(false);
+      setManualTitle("");
+      setManualWeight("");
+      setBase64Image(null);
       // Force camera remount by changing key
       setCameraKey((prev) => prev + 1);
     }, [])
@@ -80,10 +92,8 @@ export default function ScanScreen() {
         setProductData(productItem);
         await saveItemToStorage(productItem);
       } else {
-        Alert.alert(
-          "Product Not Found",
-          "No product information found for this barcode."
-        );
+        // Show manual entry option instead of alert
+        setShowManualEntry(true);
       }
     } catch (error) {
       Alert.alert(
@@ -113,8 +123,52 @@ export default function ScanScreen() {
     setLoading(false);
     setExpirationDate(null);
     setShowDatePicker(false);
+    setShowManualEntry(false);
+    setManualTitle("");
+    setManualWeight("");
+    setBase64Image(null);
     // Force camera remount by changing key
     setCameraKey((prev) => prev + 1);
+  };
+
+  const takePhoto = async () => {
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        allowsEditing: false,
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
+        setBase64Image(base64);
+      }
+    } catch (error) {
+      console.error("Error taking photo:", error);
+      Alert.alert("Error", "Failed to take photo. Please try again.");
+    }
+  };
+
+  const saveManualItem = async () => {
+    if (!manualTitle.trim()) {
+      Alert.alert("Error", "Please enter a product title.");
+      return;
+    }
+
+    const manualItem: ProductData = {
+      title: manualTitle.trim(),
+      weight: manualWeight.trim() || "Not specified",
+      image: "",
+      upc: "Manual Entry",
+      timestamp: Date.now(),
+      isManualEntry: true,
+      base64Image: base64Image || undefined,
+    };
+
+    setProductData(manualItem);
+    await saveItemToStorage(manualItem);
+    setShowManualEntry(false);
   };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
@@ -213,15 +267,74 @@ export default function ScanScreen() {
                 Fetching product information...
               </ThemedText>
             </View>
+          ) : showManualEntry ? (
+            <View style={styles.manualEntryContainer}>
+              <ThemedText type="subtitle" style={styles.manualEntryTitle}>
+                Product Not Found
+              </ThemedText>
+              <ThemedText style={styles.manualEntrySubtitle}>
+                Add this item manually
+              </ThemedText>
+
+              <View style={styles.inputContainer}>
+                <ThemedText style={styles.inputLabel}>
+                  Product Title *
+                </ThemedText>
+                <TextInput
+                  style={styles.textInput}
+                  value={manualTitle}
+                  onChangeText={setManualTitle}
+                  placeholder="Enter product name"
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <ThemedText style={styles.inputLabel}>Weight</ThemedText>
+                <TextInput
+                  style={styles.textInput}
+                  value={manualWeight}
+                  onChangeText={setManualWeight}
+                  placeholder="Enter weight (optional)"
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              <View style={styles.photoContainer}>
+                <ThemedText style={styles.inputLabel}>Product Photo</ThemedText>
+                <TouchableOpacity
+                  style={styles.photoButton}
+                  onPress={takePhoto}
+                >
+                  <ThemedText style={styles.photoButtonText}>
+                    {base64Image ? "Change Photo" : "Take Photo"}
+                  </ThemedText>
+                </TouchableOpacity>
+                {base64Image && (
+                  <Image
+                    source={{ uri: base64Image }}
+                    style={styles.previewImage}
+                    contentFit="cover"
+                  />
+                )}
+              </View>
+
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={saveManualItem}
+              >
+                <ThemedText style={styles.saveButtonText}>Save Item</ThemedText>
+              </TouchableOpacity>
+            </View>
           ) : productData ? (
             <View style={styles.productContainer}>
               <ThemedText type="subtitle" style={styles.productTitle}>
                 Product Found!
               </ThemedText>
 
-              {productData.image && (
+              {(productData.image || productData.base64Image) && (
                 <Image
-                  source={{ uri: productData.image }}
+                  source={{ uri: productData.base64Image || productData.image }}
                   style={styles.productImage}
                   contentFit="contain"
                 />
@@ -403,5 +516,71 @@ const styles = StyleSheet.create({
     color: "#007AFF",
     fontSize: 16,
     textAlign: "center",
+  },
+  manualEntryContainer: {
+    flex: 1,
+    width: "100%",
+    alignItems: "center",
+  },
+  manualEntryTitle: {
+    marginBottom: 10,
+    textAlign: "center",
+    color: "#FF6B6B",
+  },
+  manualEntrySubtitle: {
+    marginBottom: 20,
+    textAlign: "center",
+    opacity: 0.8,
+  },
+  inputContainer: {
+    width: "100%",
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 8,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: "white",
+  },
+  photoContainer: {
+    width: "100%",
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  photoButton: {
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  photoButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  previewImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 8,
+  },
+  saveButton: {
+    backgroundColor: "#34C759",
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 25,
+    marginTop: 10,
+  },
+  saveButtonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });

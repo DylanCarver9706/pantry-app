@@ -19,6 +19,8 @@ interface ProductData {
   upc: string;
   timestamp: number;
   expirationDate?: number;
+  isManualEntry?: boolean;
+  base64Image?: string;
 }
 
 export default function ItemsScreen() {
@@ -45,6 +47,7 @@ export default function ItemsScreen() {
         parsedItems.sort(
           (a: ProductData, b: ProductData) => b.timestamp - a.timestamp
         );
+        // console.log(JSON.stringify(parsedItems, null, 2));
         setItems(parsedItems);
       }
     } catch (error) {
@@ -93,9 +96,9 @@ export default function ItemsScreen() {
       </View>
 
       <View style={styles.itemContent}>
-        {item.image && (
+        {(item.image || item.base64Image) && (
           <Image
-            source={{ uri: item.image }}
+            source={{ uri: item.base64Image || item.image }}
             style={styles.itemImage}
             contentFit="contain"
           />
