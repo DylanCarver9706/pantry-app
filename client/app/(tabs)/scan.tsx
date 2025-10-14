@@ -12,8 +12,9 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router, useFocusEffect } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 
@@ -41,6 +42,7 @@ export default function ScanScreen() {
   const [manualWeight, setManualWeight] = useState("");
   const [base64Image, setBase64Image] = useState<string | null>(null);
   const cameraRef = useRef<CameraView>(null);
+  const insets = useSafeAreaInsets();
 
   // Reset scanner state when screen comes into focus
   useFocusEffect(
@@ -84,7 +86,7 @@ export default function ScanScreen() {
         // console.log(item);
         const productItem: ProductData = {
           title: item.title || "No title available",
-          weight: item.weight || "No weight available",
+          weight: item.weight || null,
           image: item.images && item.images.length > 0 ? item.images[0] : "",
           upc: upc,
           timestamp: Date.now(),
@@ -230,7 +232,9 @@ export default function ScanScreen() {
           style={styles.scanAgainButton}
           onPress={requestPermission}
         >
-          <ThemedText style={styles.buttonText}>Grant Permission</ThemedText>
+          <ThemedText style={styles.scanAgainButtonText}>
+            Grant Permission
+          </ThemedText>
         </TouchableOpacity>
       </ThemedView>
     );
@@ -238,24 +242,45 @@ export default function ScanScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.title}>
+      <ThemedText
+        type="title"
+        style={[styles.title, { paddingTop: insets.top }]}
+      >
         Pantry Scanner
       </ThemedText>
 
       {!scanned ? (
         <View style={styles.scannerContainer}>
-          <CameraView
-            key={cameraKey}
-            ref={cameraRef}
-            style={styles.scanner}
-            facing="back"
-            barcodeScannerSettings={{
-              barcodeTypes: ["qr", "pdf417", "upc_e", "upc_a", "ean13", "ean8"],
-            }}
-            onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-          />
+          <View style={styles.cameraWrapper}>
+            <CameraView
+              key={cameraKey}
+              ref={cameraRef}
+              style={styles.scanner}
+              facing="back"
+              barcodeScannerSettings={{
+                barcodeTypes: [
+                  "qr",
+                  "pdf417",
+                  "upc_e",
+                  "upc_a",
+                  "ean13",
+                  "ean8",
+                ],
+              }}
+              onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+            />
+            <View style={styles.scanOverlay}>
+              <View style={styles.scanFrame}>
+                <View style={styles.cornerTopLeft} />
+                <View style={styles.cornerTopRight} />
+                <View style={styles.cornerBottomLeft} />
+                <View style={styles.cornerBottomRight} />
+                <View style={styles.scanLine} />
+              </View>
+            </View>
+          </View>
           <ThemedText style={styles.instructionText}>
-            Point your camera at a UPC barcode to scan
+            Position the barcode within the frame
           </ThemedText>
         </View>
       ) : (
@@ -329,7 +354,7 @@ export default function ScanScreen() {
           ) : productData ? (
             <View style={styles.productContainer}>
               <ThemedText type="subtitle" style={styles.productTitle}>
-                Product Found!
+                {productData.title}
               </ThemedText>
 
               {(productData.image || productData.base64Image) && (
@@ -341,29 +366,21 @@ export default function ScanScreen() {
               )}
 
               <View style={styles.productInfo}>
-                <ThemedText style={styles.infoLabel}>Title:</ThemedText>
-                <ThemedText style={styles.infoValue}>
-                  {productData.title}
-                </ThemedText>
-
-                <ThemedText style={styles.infoLabel}>Weight:</ThemedText>
-                <ThemedText style={styles.infoValue}>
-                  {productData.weight}
-                </ThemedText>
-
-                <ThemedText style={styles.infoLabel}>
-                  Expiration Date:
-                </ThemedText>
-                <TouchableOpacity
-                  style={styles.dateButton}
-                  onPress={() => setShowDatePicker(true)}
-                >
-                  <ThemedText style={styles.dateButtonText}>
-                    {expirationDate
-                      ? expirationDate.toLocaleDateString()
-                      : "Select Date"}
+                <View style={styles.expirationRow}>
+                  <ThemedText style={styles.infoLabel}>
+                    Expiration Date:
                   </ThemedText>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.dateButton}
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <ThemedText style={styles.dateButtonText}>
+                      {expirationDate
+                        ? expirationDate.toLocaleDateString()
+                        : "Select Date"}
+                    </ThemedText>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           ) : null}
@@ -373,16 +390,9 @@ export default function ScanScreen() {
               style={styles.scanAgainButton}
               onPress={resetScanner}
             >
-              <ThemedText style={styles.buttonText}>
+              <ThemedText style={styles.scanAgainButtonText}>
                 Scan Another Barcode
               </ThemedText>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.showItemsButton}
-              onPress={() => router.push("/(tabs)/items")}
-            >
-              <ThemedText style={styles.buttonText}>Show Items</ThemedText>
             </TouchableOpacity>
           </View>
         </View>
@@ -404,22 +414,93 @@ export default function ScanScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     alignItems: "center",
   },
   title: {
     marginBottom: 20,
     textAlign: "center",
+    paddingHorizontal: 20,
+    marginTop: 40, // Push content down from top
   },
   scannerContainer: {
     flex: 1,
     width: "100%",
     alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 20,
   },
-  scanner: {
+  cameraWrapper: {
+    position: "relative",
     width: "100%",
     height: 300,
     marginBottom: 20,
+  },
+  scanner: {
+    width: "100%",
+    height: "100%",
+  },
+  scanOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scanFrame: {
+    width: 250,
+    height: 120,
+    position: "relative",
+  },
+  cornerTopLeft: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: 30,
+    height: 30,
+    borderTopWidth: 3,
+    borderLeftWidth: 3,
+    borderColor: "#007AFF",
+  },
+  cornerTopRight: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    width: 30,
+    height: 30,
+    borderTopWidth: 3,
+    borderRightWidth: 3,
+    borderColor: "#007AFF",
+  },
+  cornerBottomLeft: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    width: 30,
+    height: 30,
+    borderBottomWidth: 3,
+    borderLeftWidth: 3,
+    borderColor: "#007AFF",
+  },
+  cornerBottomRight: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 30,
+    height: 30,
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+    borderColor: "#007AFF",
+  },
+  scanLine: {
+    position: "absolute",
+    top: "50%",
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: "#007AFF",
+    opacity: 0.8,
   },
   instructionText: {
     textAlign: "center",
@@ -430,6 +511,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
     alignItems: "center",
+    paddingHorizontal: 20,
   },
   loadingContainer: {
     flex: 1,
@@ -463,40 +545,42 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   infoLabel: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
     marginTop: 10,
-    marginBottom: 5,
+    marginBottom: 0, // Remove bottom margin for better alignment
   },
   infoValue: {
-    fontSize: 14,
-    marginBottom: 10,
+    fontSize: 18,
+    marginBottom: 0, // Remove bottom margin for better alignment
+  },
+  expirationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 20, // Increased spacing between weight and expiration
+    minHeight: 40, // Ensure consistent height for alignment
   },
   buttonContainer: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "center",
     width: "100%",
     marginTop: 20,
+    marginBottom: 40, // Specific margin from bottom
   },
   scanAgainButton: {
-    backgroundColor: "#007AFF",
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderRadius: 25,
-    flex: 0.45,
+    backgroundColor: "rgba(0,122,255,0.1)",
+    borderWidth: 1,
+    borderColor: "#007AFF",
+    borderRadius: 8,
+    padding: 12,
+    minWidth: 200,
   },
-  showItemsButton: {
-    backgroundColor: "#34C759",
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderRadius: 25,
-    flex: 0.45,
-  },
-  buttonText: {
-    color: "white",
+  scanAgainButtonText: {
+    color: "#007AFF",
     fontSize: 16,
-    fontWeight: "bold",
     textAlign: "center",
+    fontWeight: "bold",
   },
   errorText: {
     textAlign: "center",
