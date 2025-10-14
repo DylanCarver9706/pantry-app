@@ -21,6 +21,7 @@ const MAPPING = {
   menu: "menu",
   camerao: "camera-alt",
   gear: "settings",
+  "wand.and.stars": "auto-fix-high",
 } as IconMapping;
 
 /**
