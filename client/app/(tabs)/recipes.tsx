@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Constants from "expo-constants";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 
@@ -99,7 +100,8 @@ export default function RecipesScreen() {
         return;
       }
 
-      const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+      const apiKey = Constants.expoConfig?.extra?.openaiApiKey;
+
       if (!apiKey) {
         Alert.alert(
           "Configuration Error",
