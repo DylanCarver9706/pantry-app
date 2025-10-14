@@ -100,7 +100,7 @@ export default function RecipesScreen() {
         return;
       }
 
-      const apiKey = Constants.expoConfig?.extra?.openaiApiKey;
+      const apiKey = Constants.expoConfig?.extra?.OPENAI_API_KEY;
 
       if (!apiKey) {
         Alert.alert(
