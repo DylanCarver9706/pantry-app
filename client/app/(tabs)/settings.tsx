@@ -5,9 +5,11 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  ScrollView,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import {
@@ -18,6 +20,7 @@ import {
 export default function SettingsScreen() {
   const [notificationTime, setNotificationTime] = useState(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     loadNotificationTime();
@@ -106,64 +109,74 @@ export default function SettingsScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.title}>
-        Settings
-      </ThemedText>
-
-      <View style={styles.section}>
-        <ThemedText type="subtitle" style={styles.sectionTitle}>
-          Notification Settings
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={[
+          styles.contentContainer,
+          { paddingTop: insets.top },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <ThemedText type="title" style={styles.title}>
+          Settings
         </ThemedText>
 
-        <ThemedText style={styles.description}>
-          Choose when you want to receive daily notifications about expiring
-          items
-        </ThemedText>
+        <View style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>
+            Notification Settings
+          </ThemedText>
 
-        <View style={styles.timeContainer}>
-          <ThemedText style={styles.timeLabel}>Notification Time:</ThemedText>
+          <ThemedText style={styles.description}>
+            Choose when you want to receive daily notifications about expiring
+            items
+          </ThemedText>
 
-          <TouchableOpacity
-            style={styles.timeButton}
-            onPress={() => setShowTimePicker(true)}
-          >
-            <ThemedText style={styles.timeButtonText}>
-              {formatTime(notificationTime)}
+          <View style={styles.timeContainer}>
+            <ThemedText style={styles.timeLabel}>Notification Time:</ThemedText>
+
+            <TouchableOpacity
+              style={styles.timeButton}
+              onPress={() => setShowTimePicker(true)}
+            >
+              <ThemedText style={styles.timeButtonText}>
+                {formatTime(notificationTime)}
+              </ThemedText>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity style={styles.resetButton} onPress={resetToDefault}>
+            <ThemedText style={styles.resetButtonText}>
+              Reset to Default (9:00 AM)
             </ThemedText>
           </TouchableOpacity>
-        </View>
 
-        <TouchableOpacity style={styles.resetButton} onPress={resetToDefault}>
-          <ThemedText style={styles.resetButtonText}>
-            Reset to Default (9:00 AM)
-          </ThemedText>
-        </TouchableOpacity>
-
-        {/* <TouchableOpacity style={styles.testButton} onPress={testNotification}>
+          {/* <TouchableOpacity style={styles.testButton} onPress={testNotification}>
           <ThemedText style={styles.testButtonText}>
             Send Test Notification
           </ThemedText>
         </TouchableOpacity> */}
-      </View>
+        </View>
 
-      <View style={styles.infoSection}>
-        <ThemedText type="subtitle" style={styles.infoTitle}>
-          How It Works
-        </ThemedText>
+        <View style={styles.infoSection}>
+          <ThemedText type="subtitle" style={styles.infoTitle}>
+            How It Works
+          </ThemedText>
 
-        <ThemedText style={styles.infoText}>
-          • You&apos;ll receive a daily notification at your chosen time
-        </ThemedText>
-        <ThemedText style={styles.infoText}>
-          • The app checks for items expiring in the next 3 days
-        </ThemedText>
-        <ThemedText style={styles.infoText}>
-          • Only items with expiration dates will trigger notifications
-        </ThemedText>
-        <ThemedText style={styles.infoText}>
-          • Notifications are automatically rescheduled when you change the time
-        </ThemedText>
-      </View>
+          <ThemedText style={styles.infoText}>
+            • You&apos;ll receive a daily notification at your chosen time
+          </ThemedText>
+          <ThemedText style={styles.infoText}>
+            • The app checks for items expiring in the next 3 days
+          </ThemedText>
+          <ThemedText style={styles.infoText}>
+            • Only items with expiration dates will trigger notifications
+          </ThemedText>
+          <ThemedText style={styles.infoText}>
+            • Notifications are automatically rescheduled when you change the
+            time
+          </ThemedText>
+        </View>
+      </ScrollView>
 
       {showTimePicker && (
         <DateTimePicker
@@ -180,7 +193,14 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  contentContainer: {
     padding: 20,
+    paddingBottom: 100, // Extra padding for tab bar
+    marginTop: 40, // Push content down from top
   },
   title: {
     marginBottom: 30,

@@ -1,19 +1,29 @@
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.title}>
-        Pantry App
-      </ThemedText>
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={[
+          styles.contentContainer,
+          { paddingTop: insets.top },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <ThemedText type="title" style={styles.title}>
+          Pantry App
+        </ThemedText>
 
-      <ThemedText style={styles.subtitle}>
-        Your digital pantry management solution
-      </ThemedText>
+        <ThemedText style={styles.subtitle}>
+          Your digital pantry management solution
+        </ThemedText>
 
         <View style={styles.featureContainer}>
           <ThemedText type="subtitle" style={styles.featureTitle}>
@@ -51,7 +61,7 @@ export default function HomeScreen() {
               </ThemedText>
               <ThemedText style={styles.stepDescription}>
                 Add expiration dates to your items and get daily notifications
-                at 10:30 PM when items are about to expire in 3 days.
+                when items are about to expire in 3 days.
               </ThemedText>
             </View>
           </View>
@@ -69,6 +79,7 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
+      </ScrollView>
     </ThemedView>
   );
 }
@@ -76,8 +87,15 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  contentContainer: {
     padding: 20,
     alignItems: "center",
+    paddingBottom: 100, // Extra padding for tab bar
+    marginTop: 40, // Push content down from top
   },
   title: {
     marginBottom: 10,
@@ -210,9 +228,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     textAlign: "center",
-  },
-  scrollContainer: {
-    flex: 1,
-    width: "100%",
   },
 });
