@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -92,7 +93,7 @@ export default function ItemsScreen() {
           // If neither has expiration date, sort by add date (oldest first)
           return a.timestamp - b.timestamp;
         });
-        // console.log(JSON.stringify(parsedItems, null, 2));
+        // console.log("Items: ", JSON.stringify(parsedItems, null, 2));
         setItems(parsedItems);
         setFilteredItems(parsedItems);
       }
@@ -218,6 +219,42 @@ export default function ItemsScreen() {
     setShowDatePicker(true);
   };
 
+  const takePhotoForItem = async (item: ProductData) => {
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        allowsEditing: false,
+        quality: 0.6,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
+
+        // Update the item with the new image
+        const updatedItems = items.map((i) => {
+          if (i.upc === item.upc && i.timestamp === item.timestamp) {
+            return {
+              ...i,
+              base64Image: base64,
+            };
+          }
+          return i;
+        });
+
+        await AsyncStorage.setItem(
+          "scannedItems",
+          JSON.stringify(updatedItems)
+        );
+        setItems(updatedItems);
+        setFilteredItems(updatedItems);
+      }
+    } catch (error) {
+      console.error("Error taking photo:", error);
+      Alert.alert("Error", "Failed to take photo. Please try again.");
+    }
+  };
+
   const renderItem = ({ item }: { item: ProductData }) => (
     <View style={styles.itemCard}>
       <View style={styles.itemHeader}>
@@ -227,13 +264,22 @@ export default function ItemsScreen() {
       </View>
 
       <View style={styles.itemContent}>
-        {(item.image || item.base64Image) && (
-          <Image
-            source={{ uri: item.base64Image || item.image }}
-            style={styles.itemImage}
-            contentFit="contain"
-          />
-        )}
+        <View style={styles.imageContainer}>
+          {item.image || item.base64Image ? (
+            <Image
+              source={{ uri: item.base64Image || item.image }}
+              style={styles.itemImage}
+              contentFit="contain"
+            />
+          ) : (
+            <TouchableOpacity
+              style={styles.addImageButton}
+              onPress={() => takePhotoForItem(item)}
+            >
+              <ThemedText style={styles.addImageButtonText}>Add</ThemedText>
+            </TouchableOpacity>
+          )}
+        </View>
 
         <View style={styles.itemInfo}>
           {item.weight && item.weight !== "No weight available" && (
@@ -431,11 +477,31 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
   },
+  imageContainer: {
+    width: 120,
+    height: 120,
+    marginRight: 16,
+  },
   itemImage: {
     width: 120,
     height: 120,
     borderRadius: 8,
-    marginRight: 16,
+  },
+  addImageButton: {
+    width: 120,
+    height: 120,
+    borderRadius: 8,
+    backgroundColor: "rgba(0,122,255,0.1)",
+    borderWidth: 2,
+    borderColor: "#007AFF",
+    borderStyle: "dashed",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addImageButtonText: {
+    color: "#007AFF",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   itemInfo: {
     flex: 1,
