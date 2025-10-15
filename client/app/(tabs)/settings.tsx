@@ -17,10 +17,23 @@ import {
   // sendTestNotification,
 } from "@/services/NotificationsService";
 
+interface ProductData {
+  title: string;
+  weight: string;
+  image: string;
+  upc: string;
+  timestamp: number;
+  expirationDate?: number;
+  isManualEntry?: boolean;
+  base64Image?: string;
+}
+
 export default function SettingsScreen() {
   const [notificationTime, setNotificationTime] = useState(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
   const insets = useSafeAreaInsets();
+  const [items, setItems] = useState<ProductData[]>([]);
+  const [filteredItems, setFilteredItems] = useState<ProductData[]>([]);
 
   useEffect(() => {
     loadNotificationTime();
@@ -107,6 +120,13 @@ export default function SettingsScreen() {
   //   }
   // };
 
+  const clearAllItems = async () => {
+    await AsyncStorage.removeItem("scannedItems");
+    setItems([]);
+    setFilteredItems([]);
+    Alert.alert("Items Cleared", "All items have been cleared");
+  };
+
   return (
     <ThemedView style={styles.container}>
       <ScrollView
@@ -156,27 +176,12 @@ export default function SettingsScreen() {
           </ThemedText>
         </TouchableOpacity> */}
         </View>
-
-        <View style={styles.infoSection}>
-          <ThemedText type="subtitle" style={styles.infoTitle}>
-            How It Works
-          </ThemedText>
-
-          <ThemedText style={styles.infoText}>
-            • You&apos;ll receive a daily notification at your chosen time
-          </ThemedText>
-          <ThemedText style={styles.infoText}>
-            • The app checks for items expiring in the next 3 days
-          </ThemedText>
-          <ThemedText style={styles.infoText}>
-            • Only items with expiration dates will trigger notifications
-          </ThemedText>
-          <ThemedText style={styles.infoText}>
-            • Notifications are automatically rescheduled when you change the
-            time
-          </ThemedText>
-        </View>
       </ScrollView>
+
+      {/* Button to clear all items for testing purposes */}
+      {/* <TouchableOpacity style={styles.clearButton} onPress={clearAllItems}>
+        <ThemedText style={styles.clearButtonText}>Clear All Items</ThemedText>
+      </TouchableOpacity> */}
 
       {showTimePicker && (
         <DateTimePicker
@@ -274,21 +279,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
   },
-  infoSection: {
-    backgroundColor: "rgba(0,0,0,0.05)",
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.1)",
+  clearButton: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    alignItems: "center",
   },
-  infoTitle: {
-    marginBottom: 15,
-    textAlign: "center",
-  },
-  infoText: {
+  clearButtonText: {
+    color: "white",
     fontSize: 14,
-    marginBottom: 8,
-    lineHeight: 20,
-    opacity: 0.8,
+    fontWeight: "bold",
   },
 });
