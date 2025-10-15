@@ -138,7 +138,7 @@ export default function ScanScreen() {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ["images"],
         allowsEditing: false,
-        quality: 0.8,
+        quality: 0.6,
         base64: true,
       });
 
@@ -166,11 +166,13 @@ export default function ScanScreen() {
       timestamp: Date.now(),
       isManualEntry: true,
       base64Image: base64Image || undefined,
+      expirationDate: expirationDate ? expirationDate.getTime() : undefined,
     };
 
-    setProductData(manualItem);
+    // console.log("Saving manual item:", manualItem);
     await saveItemToStorage(manualItem);
-    setShowManualEntry(false);
+
+    resetScanner();
   };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
@@ -180,6 +182,7 @@ export default function ScanScreen() {
       const dateWithTime = new Date(selectedDate);
       dateWithTime.setHours(9, 0, 0, 0);
       setExpirationDate(dateWithTime);
+      // console.log("Date selected for manual entry:", dateWithTime);
 
       // Update the product data with the new expiration date
       if (productData) {
@@ -297,9 +300,6 @@ export default function ScanScreen() {
               <ThemedText type="subtitle" style={styles.manualEntryTitle}>
                 Product Not Found
               </ThemedText>
-              <ThemedText style={styles.manualEntrySubtitle}>
-                Add this item manually
-              </ThemedText>
 
               <View style={styles.inputContainer}>
                 <ThemedText style={styles.inputLabel}>
@@ -314,42 +314,57 @@ export default function ScanScreen() {
                 />
               </View>
 
-              <View style={styles.inputContainer}>
-                <ThemedText style={styles.inputLabel}>Weight</ThemedText>
-                <TextInput
-                  style={styles.textInput}
-                  value={manualWeight}
-                  onChangeText={setManualWeight}
-                  placeholder="Enter weight (optional)"
-                  placeholderTextColor="#999"
-                />
-              </View>
+              <View style={styles.formRow}>
+                <View style={styles.photoContainer}>
+                  {base64Image ? (
+                    <Image
+                      source={{ uri: base64Image }}
+                      style={styles.previewImage}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.addImageButton}
+                      onPress={takePhoto}
+                    >
+                      <ThemedText style={styles.addImageButtonText}>
+                        Add
+                      </ThemedText>
+                    </TouchableOpacity>
+                  )}
+                </View>
 
-              <View style={styles.photoContainer}>
-                <ThemedText style={styles.inputLabel}>Product Photo</ThemedText>
-                <TouchableOpacity
-                  style={styles.photoButton}
-                  onPress={takePhoto}
-                >
-                  <ThemedText style={styles.photoButtonText}>
-                    {base64Image ? "Change Photo" : "Take Photo"}
-                  </ThemedText>
-                </TouchableOpacity>
-                {base64Image && (
-                  <Image
-                    source={{ uri: base64Image }}
-                    style={styles.previewImage}
-                    contentFit="cover"
-                  />
-                )}
-              </View>
+                <View style={styles.inputsColumn}>
+                  <View style={styles.inputContainer}>
+                    <ThemedText style={styles.inputLabel}>
+                      Weight (optional)
+                    </ThemedText>
+                    <TextInput
+                      style={styles.textInput}
+                      value={manualWeight}
+                      onChangeText={setManualWeight}
+                      placeholder="Enter weight"
+                      placeholderTextColor="#999"
+                    />
+                  </View>
 
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={saveManualItem}
-              >
-                <ThemedText style={styles.saveButtonText}>Save Item</ThemedText>
-              </TouchableOpacity>
+                  <View style={styles.inputContainer}>
+                    <ThemedText style={styles.inputLabel}>
+                      Expiration Date
+                    </ThemedText>
+                    <TouchableOpacity
+                      style={styles.dateButton}
+                      onPress={() => setShowDatePicker(true)}
+                    >
+                      <ThemedText style={styles.dateButtonText}>
+                        {expirationDate
+                          ? expirationDate.toLocaleDateString()
+                          : "Select Date"}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
             </View>
           ) : productData ? (
             <View style={styles.productContainer}>
@@ -394,6 +409,14 @@ export default function ScanScreen() {
                 Scan Another Barcode
               </ThemedText>
             </TouchableOpacity>
+            {showManualEntry && (
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={saveManualItem}
+              >
+                <ThemedText style={styles.saveButtonText}>Save Item</ThemedText>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       )}
@@ -512,6 +535,7 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     paddingHorizontal: 20,
+    marginTop: 50,
   },
   loadingContainer: {
     flex: 1,
@@ -633,38 +657,52 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: "white",
   },
-  photoContainer: {
+  formRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
     width: "100%",
-    marginBottom: 20,
+    marginTop: 20,
+  },
+  photoContainer: {
+    width: 200,
+    height: 200,
+    marginRight: 20,
+  },
+  addImageButton: {
+    width: 200,
+    height: 200,
+    borderRadius: 8,
+    backgroundColor: "rgba(0,122,255,0.1)",
+    borderWidth: 2,
+    borderColor: "#007AFF",
+    borderStyle: "dashed",
+    justifyContent: "center",
     alignItems: "center",
   },
-  photoButton: {
-    backgroundColor: "#007AFF",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  photoButtonText: {
-    color: "white",
+  addImageButtonText: {
+    color: "#007AFF",
     fontSize: 16,
     fontWeight: "bold",
   },
   previewImage: {
-    width: 120,
-    height: 120,
+    width: 200,
+    height: 200,
     borderRadius: 8,
   },
+  inputsColumn: {
+    flex: 1,
+  },
   saveButton: {
-    backgroundColor: "#34C759",
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 25,
-    marginTop: 10,
+    backgroundColor: "#007AFF",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginLeft: 10,
   },
   saveButtonText: {
     color: "white",
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "bold",
+    textAlign: "center",
   },
 });
